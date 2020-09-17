@@ -96,25 +96,25 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
                     /* movetodir = 1, whereami = 2, history  = 3, byebye = 4, start = 5, background = 6, exterminate = 7*/
                     switch (commandNumber(command))
                     {
-                        switch movetodir:
+                        case movetodir:
                                 movetodir();
                                 break;
-                        switch whereami:
+                        case whereami:
                                 whereami();
                                 break;
-                        switch history:
+                        case history:
                                 history();
                                 break;
-                        switch byebye:
+                        case byebye:
                                 exit = 1;
                                 break;
-                        switch start:
+                        case start:
                                 start();
                                 break;
-                        switch background:
+                        case background:
                                 background();
                                 break;
-                        switch exterminate:
+                        case exterminate:
                                 break;
                         default:
                             break;
