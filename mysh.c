@@ -83,7 +83,7 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
         int main()
         {
                 int exit = 0;
-                printf("welcome to fake baby compiler\n");
+                printf("welcome to fake baby shell\n");
                 
                 do{
                     char** tokenized = allocStrArray(MAX_INPUTS, MAX_CHAR);
