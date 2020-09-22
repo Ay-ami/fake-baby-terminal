@@ -216,39 +216,11 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
                 strcpy(args[i-1], tokenized[i]);
             }
             args[i-1] = NULL; // srgs must be null terminated
-            
-            /*
-            printf("check the contents of the args:\n");
-             for(i=0 ; i < numTokens-1 ; i++)
-            {
-                 printf("%d: %s\n", i, args[i]);
-            }
-            */
+
 
             pid_t pid;
             int status;
 
-            /*
-            switch (pid = fork())
-            {
-                case -1:
-                    // On error fork() returns -1.
-                    perror("fork failed");
-                    exit(EXIT_FAILURE);
-                case 0:
-                    // On success fork() returns 0 in the child.
-                    printf(" CHILD <%ld> I'm alive! My PID is <%ld> and my parent got PID <%ld>.\n", (long) getpid(), (long) getpid(), (long) getppid());
-                    printf(" CHILD <%ld> Goodbye!\n", (long) getpid());
-                    exit(EXIT_SUCCESS);
-                default:
-                    // On success fork() returns the pid of the child to the parent.
-                    printf("PARENT <%ld> Spawned a child with PID = %ld.\n", (long) getpid(), (long) pid);
-                    wait(NULL);
-                    printf("PARENT <%ld> Child with PID = %ld terminated.\n", (long) getpid(), (long) pid);
-                    printf("PARENT <%ld> Goodbye.\n", (long) getpid());
-                    exit(EXIT_SUCCESS);
-            }
-            */
             pid = fork();
             if ( pid < 0)
             {
@@ -329,15 +301,7 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
 
                     tokenized = tokenizer(str, numTokens);
                     strcpy(command, tokenized[0]); // first token is always a command
-                    /* movetodir = 1, whereami = 2, history  = 3, byebye = 4, start = 5, background = 6, exterminate = 7*/
-
-                    // printf("lets see the tokens in main: \n");
-                    // int i;
-                    // for (i=0; i < *numTokens; i++)
-                    // {
-                    //     printf("%d: %s\n", i, tokenized[i]);
-                    // }
-
+                    
                     switch (commandNumber(command))
                     {
                         case movetodir:
