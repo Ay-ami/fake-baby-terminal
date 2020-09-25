@@ -48,7 +48,9 @@ parent started child with PID of: 31012, 31013, 31014, 31015,
 
 # exterminateall
 
-Immediately terminates all the programs previously started by the mysh shell which had not been previously terminated by it, or by exterminate. It should output something like this:
+Immediately terminates all the programs previously started by the mysh shell which had not been previously terminated by it, or by exterminate. 
 
+ex: exterminateall
+would print:
 Exterminating PIDs: 31012, 31013, 31014, 31015,
 
