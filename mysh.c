@@ -10,12 +10,60 @@
 
 #define MAX_CHAR 300
 #define MAX_STRINGS 10
+int ext = 0; // exit flag
 char* currDir;
 char** historyList;
 int historyLen = 0, historyPointer=0, sizeOfHistory=10;
+int* pidArray; // holds the pid of child prcoesses that haven't been killed yet
+int numChilds = 0, maxChilds = 10;
 
-enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, start = 5, background = 6, exterminate = 7}; //, repeat =8};
+enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, start = 5, background = 6, exterminate = 7, repeat =8, exterminateall=9};
 
+        void  extendPIDArray()
+        {
+            int i;
+            maxChilds = maxChilds + 10;
+            int* temp = (int *)calloc(maxChilds, sizeof(int));
+
+            for (i = 0; i < numChilds ; i++)
+            {
+                temp[i] = pidArray[i];
+            }
+            pidArray = temp;
+
+            //free(temp);
+        }
+        void unmarkPID(int pid)
+        {
+            int i;
+            for (i = 0; i < numChilds ; i++)
+            {
+                if ( pidArray[i] == pid)
+                    pidArray[i] = 0;
+            }
+        }
+        void exterminateallf()
+        {
+            int i;
+            printf("Exterminating PIDs: ");
+            for (i = 0; i < numChilds ; i++)
+            {
+                if (pidArray[i] == 0)
+                {
+                    continue;
+                }
+                else{
+                    if (kill(pidArray[i], SIGKILL) == -1)
+                    {
+                        continue;
+                    }
+                    else
+                        printf("%d, ", pidArray[i]);
+                }
+                
+            }
+            printf("\n");
+        }
         // allocates space for an array of strings
         char** allocStrArray(int stringsize, int totalStrings)
         {
@@ -54,7 +102,6 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             printf("# ");
             fgets(str, MAX_CHAR, stdin); // stdin = keyboard
             addToHistory(str);
-            //str[sizeof(str)/sizeof(char)]= '\0';
         }
         char** tokenizer(char* str, int *numTokens)
         {
@@ -80,7 +127,6 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
 
             }
             *numTokens = count;
-            // printf("number of tokens: %d\n", *numTokens);
 
             // get rid of the newline character in the last input
             returnTokens[count-1][strlen(returnTokens[count-1])-1] = '\0';
@@ -109,6 +155,10 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
                 return background;
             else if (strcmp(command, "exterminate\0") == 0)
                 return exterminate;
+            else if (strcmp(command, "repeat") == 0)
+                return repeat;
+            else if (strcmp(command, "exterminateall") == 0)
+                return exterminateall;
             else
             {
                 printf("command not recognied\n");
@@ -136,17 +186,17 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
 
         char* moveToDirf(char* newDir)
         {
+            // we're kinda forming the "full" dir inside of temp
             char* temp = allocCharArray(MAX_CHAR); 
-            //strcat(newDir, "/");
             strcpy(temp, currDir);
-            //printf("newDir: %s\n", newDir); // check the new directory has passed correctly 
 
             if (newDir[0] != '/') // if it doesn't already have a slash, put one
                 strcat(temp, "/");
 
             strcat(temp, newDir);
             
-            if( chdir (temp) == 0 )
+            // now we can use this built directory address
+            if( chdir (temp) == 0 ) // chdir = change directiory, if it's 0 it was sucessful 
             {
                 strcpy(currDir, temp);
                 printf("sucessfully changed to: %s\n", currentDirectory());
@@ -215,8 +265,7 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             {
                 strcpy(args[i-1], tokenized[i]);
             }
-            args[i-1] = NULL; // srgs must be null terminated
-
+            args[i-1] = NULL; // args must be null terminated
 
             pid_t pid;
             int status;
@@ -228,7 +277,7 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             }
             else if (pid == 0) // child
             {
-                if (execvp(args[0], args) < 0) {     // execute the command                                 // ok so here, i have a problem with args, it doesn't seem to pass though 
+                if (execvp(args[0], args) < 0) {     // execute the command
                     printf("execution failed\n");
                     exit(1);
                 }
@@ -255,6 +304,9 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             //int status;
             
             pid = fork();
+            pidArray[numChilds] = pid;
+            numChilds++;
+
             if ( pid < 0)
             {
                 printf("error");
@@ -269,7 +321,6 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             else // parent behaves differently if its a background process rather than a regular exicution
             {
                printf("parent started child with PID of %ld\n", (long)pid);
-               //return;
             }
         }
         void exterminatef(char* input)
@@ -279,62 +330,124 @@ enum supportedCommands{movetodir = 1, whereami = 2, history  = 3, byebye = 4, st
             {
                 printf("kill error\n");
             }
-            printf("killed PID %ld\n", (long) PID);
+            else
+                printf("killed PID %ld\n", (long) PID);
+            unmarkPID(PID);
+            
+        }
+        void repeatf(char** tokenized, int numTokens, int n)
+        {
+            // seperate out all of the arguments including the program name but leave out the command "start"
+            char** args = allocStrArray(MAX_CHAR, MAX_STRINGS);
+            int i;
+            for (i = 1 ; i < numTokens ; i++)
+            {
+                strcpy(args[i-1], tokenized[i]);
+            }
+            args[i-1] = NULL;
+            
+            pid_t pid;
+            
+            printf("PID: ");
+            for (i=0; i < n; i++)
+            {
+                pid = fork();
+                if (numChilds == maxChilds)
+                {
+                    extendPIDArray();
+                }
+                pidArray[numChilds] = pid;
+                numChilds++;
+
+                if ( pid < 0)
+                {
+                    printf("error");
+                }
+                else if (pid == 0) // child
+                {
+                    if (execvp(args[0], args) < 0) {     // execute the command
+                        printf("execution failed\n");
+                        exit(1);
+                    }
+                }
+                else // parent behaves differently if its a background process rather than a regular exicution
+                {
+                    printf("%ld, ", (long)pid);
+                }
+            }
+            printf("\n#");
+            
+        }
+
+        void doAction(char** tokenized, int *numTokens)
+        {
+            int i, j;
+            char** args = allocStrArray(MAX_CHAR, MAX_STRINGS);
+            switch (commandNumber(tokenized[0])) // first token is always a command
+            {
+                case movetodir:
+                        currDir = moveToDirf(tokenized[1]);
+                        break;
+                case whereami:
+                        whereAmIf();
+                        break;
+                case history:
+                        if ( strcmp(tokenized[1], "") != 0 )
+                            clearHistory(tokenized[1]);
+                        else
+                            historyf();
+                        break;
+                case byebye:
+                        ext = 1;
+                        break;
+                case start:
+                        startf(tokenized, *numTokens);
+                        break;
+                case background:
+                        backgroundf(tokenized, *numTokens);
+                        printf(">\n");
+                        break;
+                case exterminate:
+                        exterminatef(tokenized[1]);
+                        break;
+                case repeat: // may want to implement the kill all so that i can start the muliple processes and then call kill all
+                        strcpy(args[0], tokenized[0]);
+                        strcpy(args[1], tokenized[2]);
+                        for ( i = 2; i < *numTokens ; i++)
+                        {
+                            strcpy(args[i], tokenized[i+1]);
+                        }
+                        repeatf(args, (*numTokens)-1, atoi(tokenized[1]) );
+                        break;
+                case exterminateall:
+                        exterminateallf();
+                        break;
+                default:
+                    break;
+            }
+            //printf("bottom of switch\n");
         }
 
         int main()
         {
-                int exit = 0;
+                //int exit = 0;
                 printf("welcome to myShell\n");
                 currDir = allocCharArray(MAX_CHAR);
                 currDir = currentDirectory();
                 historyList = allocStrArray(MAX_CHAR, MAX_STRINGS);
+                pidArray = (int *)calloc(maxChilds, sizeof(int));
                 
                 do{
-                    printf("inside of do/while loop\n");
                     char** tokenized = allocStrArray(MAX_CHAR, MAX_STRINGS);
                     int *numTokens = (int*) calloc(1, sizeof(int));
                     char* command = allocCharArray(MAX_CHAR);//(char *)calloc(MAX_STRINGS, sizeof(char));
                     char* str = allocCharArray(MAX_CHAR);
 
                     input(str);
-
                     tokenized = tokenizer(str, numTokens);
-                    strcpy(command, tokenized[0]); // first token is always a command
-                    
-                    switch (commandNumber(command))
-                    {
-                        case movetodir:
-                                currDir = moveToDirf(tokenized[1]);
-                                break;
-                        case whereami:
-                                whereAmIf();
-                                break;
-                        case history:
-                                if ( strcmp(tokenized[1], "") != 0 )
-                                    clearHistory(tokenized[1]);
-                                else
-                                    historyf();
-                                break;
-                        case byebye:
-                                exit = 1;
-                                break;
-                        case start:
-                                startf(tokenized, *numTokens);
-                                break;
-                        case background:
-                                backgroundf(tokenized, *numTokens);
-                                printf(">\n");
-                                break;
-                        case exterminate:
-                                exterminatef(tokenized[1]);
-                                break;
-                        default:
-                            break;
-                    }
-                    //printf("bottom of switch\n");
+                    doAction(tokenized, numTokens);
 
-                }while (exit == 0);
+                }while (ext == 0);
 
                 printf("end of program\n");
                 return 0;
