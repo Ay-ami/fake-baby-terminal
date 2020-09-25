@@ -1,8 +1,8 @@
 # fake-baby-terminal
 
-Write a C or C++ program called "mysh" which replaces the command shell in Unix.  After started, it prints a prompt “#” and reads a command line terminated by newline. This line should be parsed out into a command and all its arguments. In other words, tokenize it.
+"Replaces"/"acts" the command shell in Unix.  After started, it prints a prompt “#” and reads a command line terminated by newline. 
 Does not support "special" characters like quotation marks, backslashes, and tab characters. And does not support file paths with spaces in them.
-•	Maximum 10 command line arguments by defalut though it is a variable defined up top so it could be changed 
+Maximum 10 command line arguments by defalut though it is a variable defined up top so it could be changed 
 
 
 This shell interprets the following commands:
